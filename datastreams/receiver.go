@@ -2,7 +2,9 @@ package datastreams
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -11,11 +13,12 @@ var (
 )
 
 type DefaultReceiver struct {
-	UnimplementedDatastreamServer
+	UnimplementedDataStreamServiceServer
 }
 
 func (s *DefaultReceiver) Exchange(ctx context.Context, message *Message) (*emptypb.Empty, error) {
 	slog.Info("Incoming message from sender")
+        slog.Info(fmt.Sprintf("+%v", message))
 	return &emptypb.Empty{}, nil
 }
 
@@ -27,6 +30,6 @@ func (s *DefaultReceiver) Register(ctx context.Context, application *Application
 		return nil, err
 	}
 
-	slog.Info("Application registered successfully, id: ", application.Id.Value)
+	slog.Info("Application registered successfully", "id", application.Id.Value)
 	return application, nil
 }

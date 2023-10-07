@@ -28,7 +28,7 @@ func start_grpc(host string, port int) {
     }
     var opts []grpc.ServerOption
     grpcServer := grpc.NewServer(opts...)
-    ds.RegisterDatastreamServer(grpcServer, &ds.DefaultReceiver{})
+    ds.RegisterDataStreamServiceServer(grpcServer, &ds.DefaultReceiver{})
     slog.Info("gRPC server running on", host, port)
     grpcServer.Serve(lis)
 }

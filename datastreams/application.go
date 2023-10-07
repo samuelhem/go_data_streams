@@ -24,7 +24,6 @@ func NewApplicationPool(initalSize int32) *ApplicationPool {
 }
 
 func (pool *ApplicationPool) RegisterApplication(app *Application) (error) {
-
     if err := app.validate(); err != nil {
         return err
     }
@@ -40,3 +39,5 @@ func (a *Application) validate() error {
     }
     return nil 
 }
+
+

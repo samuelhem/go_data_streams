@@ -1,14 +1,8 @@
 package main
 
 import (
-	"context"
 	"flag"
-	"log/slog"
-	"time"
-
-	ds "github.com/samuelhem/go_data_streams/datastreams"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+        cl  "github.com/samuelhem/go_data_streams/lib"
 )
 
 var (
@@ -20,43 +14,13 @@ var (
 )
 
 func main() {
-	flag.Parse()
-	var opts []grpc.DialOption
-	/* if *tls {
-	    if *caFile == "" {
-	        *caFile = testdata.Path("ca.pem")
-	    }
-	    creds, err := credentials.NewClientTLSFromFile(*caFile, *serverHostOverride)
-	    if err != nil {
-	        log.Fatalf("Failed to create TLS credentials %v", err)
-	    }
-	    opts = append(opts, grpc.WithTransportCredentials(creds))
-	} else { */
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	//}
 
-	conn, err := grpc.Dial(*serverAddr, opts...)
-	if err != nil {
-            slog.Error("fail to dial:", err)
-	}
+    flag.Parse()
 
-	defer conn.Close()
+    client := cl.NewDataStreamsClient(*applicationName, serverAddr)
+    broker := client.createMessageBroker("test_channel")
 
-	client := ds.NewDatastreamClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-        slog.Info("Initiated connection, registering application")
-        register_with_server(ctx, client)
-}
-
-func register_with_server(ctx context.Context, client ds.DatastreamClient) {
-	app := ds.NewApplication("test", "localhost:10000")
-        app, err := client.Register(ctx, app)
-        if err != nil {
-            slog.Error("failed to register application:", err)
-        }
-
-        slog.Info("Application registered successfully, id: ", app.Id.Value)
+    broker.Publish("test message")
 
 }
+

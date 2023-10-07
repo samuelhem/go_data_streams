@@ -6,7 +6,7 @@ import "google/protobuf/any.proto";
 
 package datastreams;
 
-service Datastream {
+service DataStreamService {
 
     rpc Exchange(Message) returns (google.protobuf.Empty) {}
     rpc Register(Application) returns (Application) {}
@@ -14,7 +14,7 @@ service Datastream {
 }
 
 message Message {
-    Receiver receiver = 1;
+    DataStream dataStream = 1;
     MessageType type = 2;
     google.protobuf.Any data = 3;
 }
@@ -25,9 +25,8 @@ enum MessageType {
     UNICAST = 2;
 }
 
-message Receiver {
-    int32 id = 1;
-    string name = 2; 
+message DataStream {
+    string name = 1;
 }
 
 message UUID {

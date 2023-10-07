@@ -20,126 +20,126 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Datastream_Exchange_FullMethodName = "/datastreams.Datastream/Exchange"
-	Datastream_Register_FullMethodName = "/datastreams.Datastream/Register"
+	DataStreamService_Exchange_FullMethodName = "/datastreams.DataStreamService/Exchange"
+	DataStreamService_Register_FullMethodName = "/datastreams.DataStreamService/Register"
 )
 
-// DatastreamClient is the client API for Datastream service.
+// DataStreamServiceClient is the client API for DataStreamService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type DatastreamClient interface {
+type DataStreamServiceClient interface {
 	Exchange(ctx context.Context, in *Message, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Register(ctx context.Context, in *Application, opts ...grpc.CallOption) (*Application, error)
 }
 
-type datastreamClient struct {
+type dataStreamServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewDatastreamClient(cc grpc.ClientConnInterface) DatastreamClient {
-	return &datastreamClient{cc}
+func NewDataStreamServiceClient(cc grpc.ClientConnInterface) DataStreamServiceClient {
+	return &dataStreamServiceClient{cc}
 }
 
-func (c *datastreamClient) Exchange(ctx context.Context, in *Message, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *dataStreamServiceClient) Exchange(ctx context.Context, in *Message, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, Datastream_Exchange_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, DataStreamService_Exchange_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *datastreamClient) Register(ctx context.Context, in *Application, opts ...grpc.CallOption) (*Application, error) {
+func (c *dataStreamServiceClient) Register(ctx context.Context, in *Application, opts ...grpc.CallOption) (*Application, error) {
 	out := new(Application)
-	err := c.cc.Invoke(ctx, Datastream_Register_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, DataStreamService_Register_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// DatastreamServer is the server API for Datastream service.
-// All implementations must embed UnimplementedDatastreamServer
+// DataStreamServiceServer is the server API for DataStreamService service.
+// All implementations must embed UnimplementedDataStreamServiceServer
 // for forward compatibility
-type DatastreamServer interface {
+type DataStreamServiceServer interface {
 	Exchange(context.Context, *Message) (*emptypb.Empty, error)
 	Register(context.Context, *Application) (*Application, error)
-	mustEmbedUnimplementedDatastreamServer()
+	mustEmbedUnimplementedDataStreamServiceServer()
 }
 
-// UnimplementedDatastreamServer must be embedded to have forward compatible implementations.
-type UnimplementedDatastreamServer struct {
+// UnimplementedDataStreamServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedDataStreamServiceServer struct {
 }
 
-func (UnimplementedDatastreamServer) Exchange(context.Context, *Message) (*emptypb.Empty, error) {
+func (UnimplementedDataStreamServiceServer) Exchange(context.Context, *Message) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Exchange not implemented")
 }
-func (UnimplementedDatastreamServer) Register(context.Context, *Application) (*Application, error) {
+func (UnimplementedDataStreamServiceServer) Register(context.Context, *Application) (*Application, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
 }
-func (UnimplementedDatastreamServer) mustEmbedUnimplementedDatastreamServer() {}
+func (UnimplementedDataStreamServiceServer) mustEmbedUnimplementedDataStreamServiceServer() {}
 
-// UnsafeDatastreamServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to DatastreamServer will
+// UnsafeDataStreamServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to DataStreamServiceServer will
 // result in compilation errors.
-type UnsafeDatastreamServer interface {
-	mustEmbedUnimplementedDatastreamServer()
+type UnsafeDataStreamServiceServer interface {
+	mustEmbedUnimplementedDataStreamServiceServer()
 }
 
-func RegisterDatastreamServer(s grpc.ServiceRegistrar, srv DatastreamServer) {
-	s.RegisterService(&Datastream_ServiceDesc, srv)
+func RegisterDataStreamServiceServer(s grpc.ServiceRegistrar, srv DataStreamServiceServer) {
+	s.RegisterService(&DataStreamService_ServiceDesc, srv)
 }
 
-func _Datastream_Exchange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _DataStreamService_Exchange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Message)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DatastreamServer).Exchange(ctx, in)
+		return srv.(DataStreamServiceServer).Exchange(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Datastream_Exchange_FullMethodName,
+		FullMethod: DataStreamService_Exchange_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatastreamServer).Exchange(ctx, req.(*Message))
+		return srv.(DataStreamServiceServer).Exchange(ctx, req.(*Message))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Datastream_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _DataStreamService_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Application)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DatastreamServer).Register(ctx, in)
+		return srv.(DataStreamServiceServer).Register(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Datastream_Register_FullMethodName,
+		FullMethod: DataStreamService_Register_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatastreamServer).Register(ctx, req.(*Application))
+		return srv.(DataStreamServiceServer).Register(ctx, req.(*Application))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Datastream_ServiceDesc is the grpc.ServiceDesc for Datastream service.
+// DataStreamService_ServiceDesc is the grpc.ServiceDesc for DataStreamService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Datastream_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "datastreams.Datastream",
-	HandlerType: (*DatastreamServer)(nil),
+var DataStreamService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "datastreams.DataStreamService",
+	HandlerType: (*DataStreamServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Exchange",
-			Handler:    _Datastream_Exchange_Handler,
+			Handler:    _DataStreamService_Exchange_Handler,
 		},
 		{
 			MethodName: "Register",
-			Handler:    _Datastream_Register_Handler,
+			Handler:    _DataStreamService_Register_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
