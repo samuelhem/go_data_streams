@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+option go_package = "github.com/samuelhem/go_data_streams/datastreams";
+import "google/protobuf/empty.proto";
+import "google/protobuf/any.proto";
+
+package datastreams;
+
+service Datastream {
+
+    rpc Exchange(Message) returns (google.protobuf.Empty) {}
+    rpc Register(Application) returns (Application) {}
+
+}
+
+message Message {
+    Receiver receiver = 1;
+    MessageType type = 2;
+    google.protobuf.Any data = 3;
+}
+
+enum MessageType {
+    BROADCAST = 0;
+    MULTICAST = 1;
+    UNICAST = 2;
+}
+
+message Receiver {
+    int32 id = 1;
+    string name = 2; 
+}
+
+message UUID {
+    string value = 1;
+}
+
+message Application {
+    UUID id = 1;
+    string name = 2;
+    string hostname = 3;
+    ApplicationState state = 4; 
+}
+
+enum ApplicationState {
+    AVAILABLE = 0;
+    UNAVAILABLE = 1;
+    DELETED = 2;
+}
