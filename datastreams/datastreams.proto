@@ -14,15 +14,19 @@ service DataStreamService {
 }
 
 message Message {
-    DataStream dataStream = 1;
-    MessageType type = 2;
-    google.protobuf.Any data = 3;
+    UUID sender = 1;
+    DataStream dataStream = 2;
+    MessageType type = 3;
+    google.protobuf.Any data = 4;
+    string Event = 5;
 }
 
 enum MessageType {
     BROADCAST = 0;
     MULTICAST = 1;
     UNICAST = 2;
+    SUBSCRIBE = 3;
+    UNSUBSCRIBE = 4;
 }
 
 message DataStream {
@@ -38,6 +42,12 @@ message Application {
     string name = 2;
     string hostname = 3;
     ApplicationState state = 4; 
+    map<string, EventState> events = 5;
+}
+
+enum EventState {
+    SUBSCRIBED = 0;
+    UNSUBSCRIBED = 1;
 }
 
 enum ApplicationState {

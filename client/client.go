@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-        cl  "github.com/samuelhem/go_data_streams/lib"
+        cl  "github.com/samuelhem/go_data_streams/client/lib"
 )
 
 var (
@@ -18,9 +18,10 @@ func main() {
     flag.Parse()
 
     client := cl.NewDataStreamsClient(*applicationName, serverAddr)
-    broker := client.createMessageBroker("test_channel")
+    broker := client.CreateMessageBroker("task_channel")
 
-    broker.Publish("test message")
+    broker.Subscribe("create_task_event")
+    broker.Publish("create_task_event", "Hello World")
 
 }
 

@@ -2,31 +2,51 @@ package datastreams
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log/slog"
 
+	"github.com/google/uuid"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
-var (
-	applicationPool = NewApplicationPool(10)
-)
-
 type DefaultReceiver struct {
+	ApplicationPool *ApplicationPool
+	MessageQueue    chan *Message
 	UnimplementedDataStreamServiceServer
 }
 
 func (s *DefaultReceiver) Exchange(ctx context.Context, message *Message) (*emptypb.Empty, error) {
-	slog.Info("Incoming message from sender")
-        slog.Info(fmt.Sprintf("+%v", message))
+
+	id, err := uuid.Parse(message.Sender.Value)
+	if err != nil {
+		return nil, errors.New("ApplicationId invalid")
+		//TODO: put application not registed message back to the sender
+	}
+
+	isRegistered := s.ApplicationPool.IsRegistered(id)
+	if !isRegistered {
+		return nil, errors.New("Application needs to be subscribed to the server")
+	}
+
+	switch message.Type {
+	case MessageType_BROADCAST:
+		s.MessageQueue <- message
+
+	case MessageType_SUBSCRIBE:
+		s.ApplicationPool.GetApplication(id).AddEvent(message.Event)
+
+	case MessageType_UNSUBSCRIBE:
+
+	}
+
 	return &emptypb.Empty{}, nil
 }
 
 func (s *DefaultReceiver) Register(ctx context.Context, application *Application) (*Application, error) {
 	slog.Info("Application registering to the pool")
 
-	if err := applicationPool.RegisterApplication(application); err != nil {
-		slog.Error("Application registration failed", err)
+	if err := s.ApplicationPool.RegisterApplication(application); err != nil {
+		slog.Error("Application registration failed", "error", err)
 		return nil, err
 	}
 
