@@ -24,7 +24,7 @@ func NewWorker(applicationPool *ApplicationPool, messageQueue chan *Message) *Wo
 }
 
 func (w *Worker) Start() {
-	slog.Info("Starting", "worker",  w.workerId)
+	slog.Info("Starting", "worker", w.workerId)
 	go func() {
 		for {
 			select {
@@ -54,5 +54,5 @@ func NewForwardMessagingDispatcher() *ForwardMessagingDispatcher {
 }
 
 func dispatch(message *Message) {
-    slog.Info(fmt.Sprintf("Dispatching message %+v", message))
+	slog.Info(fmt.Sprintf("Dispatching message %+v", message))
 }

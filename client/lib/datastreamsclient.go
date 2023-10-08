@@ -16,20 +16,24 @@ type DataStreamsClient struct {
 	app            *ds.Application
 	serviceClient  ds.DataStreamServiceClient
 	conn           *grpc.ClientConn
-	messageBrokers map[string]ds.MessageBroker
+	messageBrokers map[string]MessageBroker
 }
 
-func NewDataStreamsClient(clientName string, serverAddr *string) *DataStreamsClient {
+func NewDataStreamsClient(clientName string, serverAddr string) *DataStreamsClient {
 
 	slog.Info("Initizalizing go_data_streams client...")
-	app, client, conn := initializeGrpcClient(clientName, serverAddr)
+	conn := initializeGrpcConnection(clientName, serverAddr)
+        slog.Info("Initiated grpc connection, registering application...")
+	client := ds.NewDataStreamServiceClient(conn)
+        app := initApplication(clientName, serverAddr, client)
+
 	slog.Info("Finished initializing!")
 
 	return &DataStreamsClient{
 		app:            app,
 		serviceClient:  client,
 		conn:           conn,
-		messageBrokers: make(map[string]ds.MessageBroker),
+		messageBrokers: make(map[string]MessageBroker),
 	}
 }
 
@@ -37,11 +41,11 @@ func (client *DataStreamsClient) Close() {
 	client.conn.Close()
 }
 
-func (client *DataStreamsClient) CreateMessageBroker(streamName string) ds.MessageBroker {
+func (client *DataStreamsClient) CreateMessageBroker(streamName string) MessageBroker {
 	if client.messageBrokers[streamName] == nil {
 		slog.Info("Creating message broker for stream", "stream", streamName)
 		stream := &ds.DataStream{Name: streamName}
-		client.messageBrokers[streamName] = ds.NewDefaultMessageBroker(client.app.Id, stream, &client.serviceClient)
+		client.messageBrokers[streamName] = client.NewDefaultMessageBroker(stream)
 	} else {
 		slog.Info("Message broker already exists for stream", "stream", streamName)
 		return nil
@@ -50,7 +54,7 @@ func (client *DataStreamsClient) CreateMessageBroker(streamName string) ds.Messa
 
 }
 
-func initializeGrpcClient(appName string, serverAddr *string) (*ds.Application, ds.DataStreamServiceClient, *grpc.ClientConn) {
+func initializeGrpcConnection(appName string, serverAddr string) *grpc.ClientConn {
 	var opts []grpc.DialOption
 	/* if *tls {
 	    if *caFile == "" {
@@ -65,26 +69,28 @@ func initializeGrpcClient(appName string, serverAddr *string) (*ds.Application, 
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	//}
 
-	conn, err := grpc.Dial(*serverAddr, opts...)
+	conn, err := grpc.Dial(serverAddr, opts...)
 	if err != nil {
 		slog.Error("fail to dial:", err)
 		panic("Failed to connect to DataStreams server")
 	}
+        return conn
+}
 
-	client := ds.NewDataStreamServiceClient(conn)
+func initApplication(appName string, serverAddr string, client ds.DataStreamServiceClient) *ds.Application {
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	slog.Info("Initiated grpc connection, registering application...")
-	_, app := ds.NewApplication(appName, *serverAddr)
-	app, err = register_with_server(ctx, app, client)
+	_, app := ds.NewApplication(appName, serverAddr)
+        app, err := registerApplication(ctx, app, client)
 	if err != nil {
 		panic("Failed to register application")
 	}
-	return app, client, conn
+	return app 
 }
 
-func register_with_server(ctx context.Context, app *ds.Application, client ds.DataStreamServiceClient) (*ds.Application, error) {
+func registerApplication(ctx context.Context, app *ds.Application, client ds.DataStreamServiceClient) (*ds.Application, error) {
 	slog.Info(fmt.Sprintf("Registering application %+v", app))
 	app, err := client.Register(ctx, app)
 	if err != nil {

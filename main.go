@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log/slog"
 	"net"
@@ -11,35 +10,63 @@ import (
 )
 
 const (
-	defaultHost = "localhost"
-	defaultPort = 8080
+	defaultHost                = "localhost"
+	defaultPort                = 8080
+	defaultWorkerCount         = 5
+	defaultQueueSize           = 100
+	defaultApplicationPoolSize = 10
 )
 
 func main() {
 
-	global_messaging_queue := make(chan *ds.Message, 100)
-	appPool := ds.NewApplicationPool(10)
-	spawn_workers(5, appPool, global_messaging_queue)
+	messagingQueue := make(chan *ds.Message, defaultQueueSize)
+	appPool := ds.NewApplicationPool(defaultApplicationPoolSize)
+	grpcServer := createGrpcServer(defaultHost, defaultPort)
 
-	start_grpc(defaultHost, defaultPort, appPool, global_messaging_queue)
+	dataStreamService := newDataStreamService(grpcServer, appPool, messagingQueue)
+	ds.RegisterDataStreamServiceServer(grpcServer, dataStreamService.createDataStreamGrpcService())
+
+	dataStreamService.spawnWorkers(defaultWorkerCount)
+
+	slog.Info("gRPC server running on", defaultHost, defaultPort)
+	grpcServer.Serve(listenOnTcp(defaultHost, defaultPort))
 }
 
-func start_grpc(host string, port int, appPool *ds.ApplicationPool, messageQueue chan *ds.Message) {
-	flag.Parse()
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))
-	if err != nil {
-		slog.Error("failed to listen: {}", err)
+type DataStreamService struct {
+	grpcServer   *grpc.Server
+	appPool      *ds.ApplicationPool
+	messageQueue chan *ds.Message
+}
+
+func newDataStreamService(grpcServer *grpc.Server, appPool *ds.ApplicationPool, messageQueue chan *ds.Message) *DataStreamService {
+	return &DataStreamService{grpcServer: grpcServer, appPool: appPool, messageQueue: messageQueue}
+}
+
+func (dsi *DataStreamService) createWorker() *ds.Worker {
+	return ds.NewWorker(dsi.appPool, dsi.messageQueue)
+}
+
+func (dsi *DataStreamService) createDataStreamGrpcService() ds.DataStreamServiceServer {
+	return &ds.DefaultReceiver{ApplicationPool: dsi.appPool, MessageQueue: dsi.messageQueue}
+}
+
+func (dsi *DataStreamService) spawnWorkers(n int) {
+	for i := 0; i < n; i++ {
+		go dsi.createWorker().Start()
 	}
+}
+
+func createGrpcServer(host string, port int) *grpc.Server {
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
-
-	ds.RegisterDataStreamServiceServer(grpcServer, &ds.DefaultReceiver{ApplicationPool: appPool, MessageQueue: messageQueue})
-	slog.Info("gRPC server running on", host, port)
-	grpcServer.Serve(lis)
+	return grpcServer
 }
 
-func spawn_workers(n int, appPool *ds.ApplicationPool, messageQueue chan *ds.Message) {
-	for i := 0; i < n; i++ {
-		go ds.NewWorker(appPool, messageQueue).Start()
+func listenOnTcp(host string, port int) net.Listener {
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))
+	if err != nil {
+		slog.Error("failed to listen", "error", err)
+		panic(err)
 	}
+	return lis
 }

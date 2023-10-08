@@ -17,7 +17,7 @@ func main() {
 
     flag.Parse()
 
-    client := cl.NewDataStreamsClient(*applicationName, serverAddr)
+    client := cl.NewDataStreamsClient(*applicationName, *serverAddr)
     broker := client.CreateMessageBroker("task_channel")
 
     broker.Subscribe("create_task_event")
