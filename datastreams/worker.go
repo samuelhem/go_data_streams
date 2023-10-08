@@ -1,8 +1,10 @@
 package datastreams
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -29,7 +31,7 @@ func (w *Worker) Start() {
 		for {
 			select {
 			case message := <-w.messageQueue:
-				dispatch(message)
+				go w.dispatch(message)
 			case <-w.quitChannel:
 				return
 			}
@@ -43,16 +45,17 @@ func (w *Worker) Stop() {
 	}()
 }
 
-func (w *Worker) processMessage(message *Message) {
+func (w *Worker) dispatch(message *Message) {
 
-}
+	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
+	defer close()
 
-type ForwardMessagingDispatcher struct{}
-
-func NewForwardMessagingDispatcher() *ForwardMessagingDispatcher {
-	return &ForwardMessagingDispatcher{}
-}
-
-func dispatch(message *Message) {
-	slog.Info(fmt.Sprintf("Dispatching message %+v", message))
+	apps := w.applicationPool.GetAllApplicationsForStreamEvent(message.Stream, message.Event.Name)
+	for _, app := range apps {
+		slog.Info(fmt.Sprintf("Dispatching message %+v", message))
+		_, err := w.applicationPool.connectionPool[app.Name].Exchange(ctx, message)
+		if err != nil {
+			slog.Error(fmt.Sprintf("Error sending message to application %s", app.Name), "error", err)
+		}
+	}
 }

@@ -8,8 +8,8 @@ import (
 	"time"
 
 	ds "github.com/samuelhem/go_data_streams/datastreams"
+        util "github.com/samuelhem/go_data_streams/util"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type DataStreamsClient struct {
@@ -17,24 +17,42 @@ type DataStreamsClient struct {
 	serviceClient  ds.DataStreamServiceClient
 	conn           *grpc.ClientConn
 	messageBrokers map[string]MessageBroker
+        grpcProxy     *grpc.Server
 }
 
-func NewDataStreamsClient(clientName string, serverAddr string) *DataStreamsClient {
+const (
+    REVERSE_PROXY_PORT = "10050"
+)
+
+func NewDataStreamsClient(clientName string, serverAddr string, serverPort string, clientPort string)  *DataStreamsClient {
 
 	slog.Info("Initizalizing go_data_streams client...")
-	conn := initializeGrpcConnection(clientName, serverAddr)
-        slog.Info("Initiated grpc connection, registering application...")
+        conn := util.InitializeGrpcConnection(fmt.Sprintf("%s:%s", serverAddr, serverPort))
+	slog.Info("Initiated grpc connection, registering application...")
 	client := ds.NewDataStreamServiceClient(conn)
-        app := initApplication(clientName, serverAddr, client)
+        app := initApplication(clientName, fmt.Sprintf("%s:%s", serverAddr, clientPort) , client)
 
 	slog.Info("Finished initializing!")
+
+
+        brokers := make(map[string]MessageBroker)
+        grpcProxy := util.CreateGrpcServer()  
+        ds.RegisterDataStreamServiceServer(grpcProxy, &DefaultClientReceiver{messageBrokers: brokers})
+
 
 	return &DataStreamsClient{
 		app:            app,
 		serviceClient:  client,
 		conn:           conn,
-		messageBrokers: make(map[string]MessageBroker),
+		messageBrokers: brokers,
+                grpcProxy:     grpcProxy,
 	}
+}
+
+func (client *DataStreamsClient) Start() {
+    slog.Info("Starting grpc proxy...")
+    go client.grpcProxy.Serve(util.ListenOnTcpStr(client.app.Hostname))
+
 }
 
 func (client *DataStreamsClient) Close() {
@@ -54,40 +72,17 @@ func (client *DataStreamsClient) CreateMessageBroker(streamName string) MessageB
 
 }
 
-func initializeGrpcConnection(appName string, serverAddr string) *grpc.ClientConn {
-	var opts []grpc.DialOption
-	/* if *tls {
-	    if *caFile == "" {
-	        *caFile = testdata.Path("ca.pem")
-	    }
-	    creds, err := credentials.NewClientTLSFromFile(*caFile, *serverHostOverride)
-	    if err != nil {
-	        log.Fatalf("Failed to create TLS credentials %v", err)
-	    }
-	    opts = append(opts, grpc.WithTransportCredentials(creds))
-	} else { */
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	//}
-
-	conn, err := grpc.Dial(serverAddr, opts...)
-	if err != nil {
-		slog.Error("fail to dial:", err)
-		panic("Failed to connect to DataStreams server")
-	}
-        return conn
-}
-
 func initApplication(appName string, serverAddr string, client ds.DataStreamServiceClient) *ds.Application {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	_, app := ds.NewApplication(appName, serverAddr)
-        app, err := registerApplication(ctx, app, client)
+	app, err := registerApplication(ctx, app, client)
 	if err != nil {
 		panic("Failed to register application")
 	}
-	return app 
+	return app
 }
 
 func registerApplication(ctx context.Context, app *ds.Application, client ds.DataStreamServiceClient) (*ds.Application, error) {

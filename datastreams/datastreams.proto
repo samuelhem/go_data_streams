@@ -15,10 +15,10 @@ service DataStreamService {
 
 message Message {
     UUID sender = 1;
-    DataStream dataStream = 2;
+    string stream = 2;
     MessageType type = 3;
     google.protobuf.Any data = 4;
-    string Event = 5;
+    Event event = 5;
 }
 
 enum MessageType {
@@ -31,6 +31,7 @@ enum MessageType {
 
 message DataStream {
     string name = 1;
+    map<string, Event> events = 2;
 }
 
 message UUID {
@@ -42,12 +43,17 @@ message Application {
     string name = 2;
     string hostname = 3;
     ApplicationState state = 4; 
-    map<string, EventState> events = 5;
+    map<string, DataStream> streams = 5;
 }
 
 enum EventState {
     SUBSCRIBED = 0;
     UNSUBSCRIBED = 1;
+}
+
+message Event {
+    string name = 1;
+    EventState state = 2;
 }
 
 enum ApplicationState {

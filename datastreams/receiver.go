@@ -30,10 +30,10 @@ func (s *DefaultReceiver) Exchange(ctx context.Context, message *Message) (*empt
 
 	switch message.Type {
 	case MessageType_BROADCAST:
-		s.MessageQueue <- message
+		s.processBroadcastMessage(message)
 
 	case MessageType_SUBSCRIBE:
-		s.ApplicationPool.GetApplication(id).AddEvent(message.Event)
+		s.ApplicationPool.GetApplication(id).AddEvent(message.Stream, message.Event)
 
 	case MessageType_UNSUBSCRIBE:
 
@@ -53,3 +53,9 @@ func (s *DefaultReceiver) Register(ctx context.Context, application *Application
 	slog.Info("Application registered successfully", "id", application.Id.Value)
 	return application, nil
 }
+
+func (s *DefaultReceiver) processBroadcastMessage(message *Message) {
+	s.MessageQueue <- message
+
+}
+

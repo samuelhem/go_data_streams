@@ -13,13 +13,14 @@ import (
 type MessageBroker interface {
 	Publish(event string, message any) error
 	Subscribe(event string) error
-	Receive() (*ds.Message, error)
+        Receive() (chan *ds.Message, error)
 }
 
 type DefaultMessageBroker struct {
 	App        *ds.Application
 	DataStream *ds.DataStream
 	Client     ds.DataStreamServiceClient
+        receiver   chan *ds.Message
 }
 
 func (dsc *DataStreamsClient) NewDefaultMessageBroker(data_stream *ds.DataStream) *DefaultMessageBroker {
@@ -30,6 +31,7 @@ func (dsc *DataStreamsClient) NewDefaultMessageBroker(data_stream *ds.DataStream
 		App:        dsc.app,
 		Client:     dsc.serviceClient,
 		DataStream: data_stream,
+                receiver:   make(chan *ds.Message, 10), 
 	}
 }
 
@@ -44,8 +46,8 @@ func (broker *DefaultMessageBroker) publish(message *ds.Message) error {
 	return nil
 }
 
-func (broker *DefaultMessageBroker) Receive() (*ds.Message, error) {
-	return nil, nil
+func (broker *DefaultMessageBroker) Receive()  (chan *ds.Message, error) {
+	return broker.receiver, nil
 }
 
 func (broker *DefaultMessageBroker) Publish(event string, message any) error {
@@ -65,9 +67,9 @@ func (broker *DefaultMessageBroker) Subscribe(event string) error {
 func (broker *DefaultMessageBroker) NewMessage(event string, messageType ds.MessageType, data []byte) *ds.Message {
 	return &ds.Message{
 		Sender:     broker.App.Id,
-		DataStream: broker.DataStream,
+		Stream:     broker.DataStream.Name,
 		Type:       messageType,
 		Data:       &anypb.Any{Value: data},
-		Event:      event,
+                Event:      &ds.Event{Name: event},
 	}
 }

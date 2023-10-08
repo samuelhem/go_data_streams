@@ -1,11 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
-	"net"
 
 	ds "github.com/samuelhem/go_data_streams/datastreams"
+	util "github.com/samuelhem/go_data_streams/util"
 	"google.golang.org/grpc"
 )
 
@@ -21,7 +20,7 @@ func main() {
 
 	messagingQueue := make(chan *ds.Message, defaultQueueSize)
 	appPool := ds.NewApplicationPool(defaultApplicationPoolSize)
-	grpcServer := createGrpcServer(defaultHost, defaultPort)
+	grpcServer := util.CreateGrpcServer()
 
 	dataStreamService := newDataStreamService(grpcServer, appPool, messagingQueue)
 	ds.RegisterDataStreamServiceServer(grpcServer, dataStreamService.createDataStreamGrpcService())
@@ -29,7 +28,7 @@ func main() {
 	dataStreamService.spawnWorkers(defaultWorkerCount)
 
 	slog.Info("gRPC server running on", defaultHost, defaultPort)
-	grpcServer.Serve(listenOnTcp(defaultHost, defaultPort))
+	grpcServer.Serve(util.ListenOnTcp(defaultHost, defaultPort))
 }
 
 type DataStreamService struct {
@@ -52,21 +51,7 @@ func (dsi *DataStreamService) createDataStreamGrpcService() ds.DataStreamService
 
 func (dsi *DataStreamService) spawnWorkers(n int) {
 	for i := 0; i < n; i++ {
-		go dsi.createWorker().Start()
+		dsi.createWorker().Start()
 	}
 }
 
-func createGrpcServer(host string, port int) *grpc.Server {
-	var opts []grpc.ServerOption
-	grpcServer := grpc.NewServer(opts...)
-	return grpcServer
-}
-
-func listenOnTcp(host string, port int) net.Listener {
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))
-	if err != nil {
-		slog.Error("failed to listen", "error", err)
-		panic(err)
-	}
-	return lis
-}
